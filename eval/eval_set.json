@@ -1,0 +1,12 @@
+[
+  {"question": "What are common adverse reactions to metformin?", "expected_topics": ["lactic acidosis", "gastrointestinal", "vitamin"]},
+  {"question": "Is warfarin contraindicated in pregnancy?", "expected_topics": ["pregnancy", "contraindicated", "fetal"]},
+  {"question": "What drug interactions exist for atorvastatin?", "expected_topics": ["interaction", "cyp"]},
+  {"question": "What is the boxed warning for ibuprofen?", "expected_topics": ["cardiovascular", "gastrointestinal", "bleeding"]},
+  {"question": "What adverse events are reported for lisinopril?", "expected_topics": ["cough", "angioedema", "hypotension"]},
+  {"question": "When should sertraline be avoided?", "expected_topics": ["maoi", "interaction"]},
+  {"question": "What are side effects of amlodipine?", "expected_topics": ["edema", "flushing", "headache"]},
+  {"question": "Tell me about adverse events for aspirin-XYZ-fake-drug-123", "expected_topics": ["don't have enough", "not"]},
+  {"question": "What is the dosing for omeprazole?", "expected_topics": ["mg", "daily", "dose"]},
+  {"question": "Are there hepatic warnings for atorvastatin?", "expected_topics": ["liver", "transaminase", "hepatic"]}
+]

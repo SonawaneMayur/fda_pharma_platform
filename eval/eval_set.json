@@ -1,12 +1,52 @@
 [
-  {"question": "What are common adverse reactions to metformin?", "expected_topics": ["lactic acidosis", "gastrointestinal", "vitamin"]},
-  {"question": "Is warfarin contraindicated in pregnancy?", "expected_topics": ["pregnancy", "contraindicated", "fetal"]},
-  {"question": "What drug interactions exist for atorvastatin?", "expected_topics": ["interaction", "cyp"]},
-  {"question": "What is the boxed warning for ibuprofen?", "expected_topics": ["cardiovascular", "gastrointestinal", "bleeding"]},
-  {"question": "What adverse events are reported for lisinopril?", "expected_topics": ["cough", "angioedema", "hypotension"]},
-  {"question": "When should sertraline be avoided?", "expected_topics": ["maoi", "interaction"]},
-  {"question": "What are side effects of amlodipine?", "expected_topics": ["edema", "flushing", "headache"]},
-  {"question": "Tell me about adverse events for aspirin-XYZ-fake-drug-123", "expected_topics": ["don't have enough", "not"]},
-  {"question": "What is the dosing for omeprazole?", "expected_topics": ["mg", "daily", "dose"]},
-  {"question": "Are there hepatic warnings for atorvastatin?", "expected_topics": ["liver", "transaminase", "hepatic"]}
+  {
+    "question": "What are common adverse reactions to metformin?",
+    "ground_truth": "Common adverse reactions to metformin include gastrointestinal effects such as nausea, vomiting, diarrhea, and abdominal discomfort. Lactic acidosis is a rare but serious risk. Long-term use may reduce vitamin B12 absorption.",
+    "expected_topics": ["lactic acidosis", "gastrointestinal", "vitamin"]
+  },
+  {
+    "question": "Is warfarin contraindicated in pregnancy?",
+    "ground_truth": "Warfarin is contraindicated during pregnancy. It crosses the placental barrier and can cause fetal hemorrhage, embryopathy, and other fetal harm. Alternative anticoagulation should be used during pregnancy.",
+    "expected_topics": ["pregnancy", "contraindicated", "fetal"]
+  },
+  {
+    "question": "What drug interactions exist for atorvastatin?",
+    "ground_truth": "Atorvastatin has significant drug interactions with CYP3A4 inhibitors including clarithromycin, itraconazole, and HIV protease inhibitors, which can increase plasma concentrations and the risk of myopathy or rhabdomyolysis.",
+    "expected_topics": ["interaction", "cyp"]
+  },
+  {
+    "question": "What is the boxed warning for ibuprofen?",
+    "ground_truth": "Ibuprofen carries boxed warnings for serious cardiovascular thrombotic events including myocardial infarction and stroke, and serious gastrointestinal adverse events including bleeding, ulceration, and perforation of the stomach or intestines.",
+    "expected_topics": ["cardiovascular", "gastrointestinal", "bleeding"]
+  },
+  {
+    "question": "What adverse events are reported for lisinopril?",
+    "ground_truth": "Adverse events reported for lisinopril include persistent dry cough, angioedema, hypotension especially after the first dose, renal impairment, and hyperkalemia.",
+    "expected_topics": ["cough", "angioedema", "hypotension"]
+  },
+  {
+    "question": "When should sertraline be avoided?",
+    "ground_truth": "Sertraline should not be used concomitantly with monoamine oxidase inhibitors (MAOIs) due to risk of serotonin syndrome. It is contraindicated within 14 days of discontinuing an MAOI.",
+    "expected_topics": ["maoi", "interaction"]
+  },
+  {
+    "question": "What are side effects of amlodipine?",
+    "ground_truth": "Common side effects of amlodipine include peripheral edema, flushing, headache, and dizziness. Ankle swelling is the most frequently reported side effect.",
+    "expected_topics": ["edema", "flushing", "headache"]
+  },
+  {
+    "question": "Tell me about adverse events for aspirin-XYZ-fake-drug-123",
+    "ground_truth": "I don't have enough FDA data to answer this confidently.",
+    "expected_topics": ["don't have enough", "not"]
+  },
+  {
+    "question": "What is the dosing for omeprazole?",
+    "ground_truth": "Omeprazole is typically dosed at 20 mg once daily for treatment of active duodenal ulcer and GERD. Higher doses of 40 mg daily may be used for pathological hypersecretory conditions.",
+    "expected_topics": ["mg", "daily", "dose"]
+  },
+  {
+    "question": "Are there hepatic warnings for atorvastatin?",
+    "ground_truth": "Atorvastatin has hepatic warnings. Persistent elevations of serum transaminases have been reported. Liver function tests should be considered prior to initiation and during treatment if clinically indicated.",
+    "expected_topics": ["liver", "transaminase", "hepatic"]
+  }
 ]

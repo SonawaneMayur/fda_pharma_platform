@@ -14,7 +14,8 @@ Pharmacovigilance teams spend hours per safety inquiry searching FAERS and drug 
 - **Gold (Analytics)**: Star schema (4 dims, 1 fact) → Databricks SQL dashboard.
 - Both Gold layers derive from the **same Silver** — business logic defined exactly once.
 
-See [architecture.html](architecture.html) for the full visual.
+See the full solution write-up — problem statement, architecture, decisions, deployment lifecycle, and step-by-step implementation playbook:
+- [Solution Design (PDF)](FDA%20Pharmacovigilance%20Platform%20%E2%80%94%20Solution%20Design.pdf) — print-friendly, shareable
 
 ## Repository structure
 
@@ -32,7 +33,7 @@ fda_pharma_platform/
 ├── api/                   FastAPI gateway (API-key auth, request IDs, structured logs)
 ├── eval/                  Eval set with ground_truth for mlflow.evaluate
 ├── sql/                   Star-schema analytics queries
-└── architecture.html      Interactive architecture diagram
+└── FDA Pharmacovigilance Platform — Solution Design.pdf   ↑ same content, PDF export
 ```
 
 ## Two implementation paths

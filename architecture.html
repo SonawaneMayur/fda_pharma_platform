@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FDA Pharmacovigilance Platform — Architecture</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 32px 24px 64px;
+    background: #f6f7f9;
+    color: #1a202c;
+    line-height: 1.4;
+  }
+  h1 {
+    text-align: center;
+    margin: 0 0 6px;
+    font-size: 26px;
+    color: #1a202c;
+  }
+  h2 {
+    max-width: 1200px;
+    margin: 48px auto 18px;
+    font-size: 20px;
+    color: #1a202c;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #cbd5e1;
+  }
+  .subtitle {
+    text-align: center;
+    color: #6b7280;
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+  .diagram {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* Implementation-path legend */
+  .impl-legend {
+    max-width: 1200px;
+    margin: 0 auto 24px;
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    font-size: 12px;
+    color: #4b5563;
+  }
+  .impl-legend .item { display: flex; align-items: center; gap: 6px; }
+  .nb-chip, .dlt-chip {
+    display: inline-block;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 10px;
+    padding: 3px 7px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  .nb-chip  { background: #1f2937; color: #fbbf24; }
+  .dlt-chip { background: #1e3a8a; color: #60a5fa; }
+
+  /* Layer band */
+  .layer {
+    width: 100%;
+    border-radius: 10px;
+    padding: 18px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .layer-label {
+    position: absolute;
+    top: -10px;
+    left: 18px;
+    background: #1a202c;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 3px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .sources   { background: #ecfeff; border: 1px solid #06b6d4; }
+  .bronze    { background: #fef3c7; border: 1px solid #d97706; }
+  .silver    { background: #f1f5f9; border: 1px solid #64748b; }
+  .gold      { background: #fef9c3; border: 1px solid #ca8a04; }
+  .serving   { background: #ede9fe; border: 1px solid #7c3aed; }
+  .consumers { background: #dcfce7; border: 1px solid #16a34a; }
+  .crosscut  { background: #fae8ff; border: 1px solid #a21caf; }
+
+  .sources .layer-label   { background: #0e7490; }
+  .bronze .layer-label    { background: #92400e; }
+  .silver .layer-label    { background: #334155; }
+  .gold .layer-label      { background: #854d0e; }
+  .serving .layer-label   { background: #5b21b6; }
+  .consumers .layer-label { background: #15803d; }
+  .crosscut .layer-label  { background: #86198f; }
+
+  .row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .box {
+    background: white;
+    border-radius: 8px;
+    padding: 14px 16px;
+    flex: 1 1 0;
+    min-width: 220px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border: 1px solid #e5e7eb;
+  }
+  .box .title {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: #111827;
+  }
+  .box .sub {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 6px;
+    font-family: ui-monospace, "SF Mono", monospace;
+  }
+  .box ul {
+    margin: 6px 0 0;
+    padding-left: 16px;
+    font-size: 12px;
+    color: #374151;
+  }
+  .box li { margin: 2px 0; }
+
+  .impl-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 8px 0 4px;
+  }
+  .dq-tag {
+    display: inline-block;
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin-top: 6px;
+    font-family: ui-monospace, "SF Mono", monospace;
+  }
+
+  .arrow {
+    width: 0;
+    height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 18px solid #94a3b8;
+    margin: 6px 0;
+  }
+  .arrow-label {
+    font-size: 11px;
+    color: #475569;
+    font-style: italic;
+    margin: 4px 0 6px;
+  }
+
+  .branch {
+    display: flex;
+    justify-content: center;
+    width: 60%;
+    margin: 0 auto;
+  }
+  .branch-inner {
+    width: 100%;
+    height: 30px;
+    border-top: 2px solid #94a3b8;
+    border-left: 2px solid #94a3b8;
+    border-right: 2px solid #94a3b8;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    margin-top: 8px;
+    position: relative;
+  }
+  .branch-inner::before,
+  .branch-inner::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid #94a3b8;
+  }
+  .branch-inner::before { left: -9px; }
+  .branch-inner::after  { right: -9px; }
+
+  .gold-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+  }
+  .gold-col { display: flex; flex-direction: column; gap: 12px; }
+  .gold-col h3 {
+    margin: 0 0 4px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #92400e;
+  }
+  .gold-col.analytics h3 { color: #1e40af; }
+
+  .crosscut .row { gap: 14px; }
+  .crosscut .box { background: #fdf4ff; border-color: #d8b4fe; }
+
+  .legend {
+    max-width: 1200px;
+    margin: 28px auto 0;
+    padding: 16px 20px;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    font-size: 12px;
+    color: #4b5563;
+    line-height: 1.6;
+  }
+  .legend strong { color: #1f2937; }
+  .key-decision {
+    background: #fef2f2;
+    border-left: 3px solid #dc2626;
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #7f1d1d;
+  }
+
+  /* DLT topology diagram */
+  .dlt-topology {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    padding: 28px;
+  }
+  .dag {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    align-items: center;
+    justify-items: center;
+  }
+  .dag-row {
+    display: flex;
+    gap: 36px;
+    justify-content: center;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .dag-node {
+    background: #f8fafc;
+    border: 2px solid #1e3a8a;
+    border-radius: 8px;
+    padding: 14px 18px;
+    min-width: 240px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  .dag-node.bronze-node  { border-color: #d97706; background: #fffbeb; }
+  .dag-node.silver-node  { border-color: #64748b; background: #f8fafc; }
+  .dag-node.gold-rag-node{ border-color: #ca8a04; background: #fefce8; }
+  .dag-node.gold-an-node { border-color: #0369a1; background: #f0f9ff; }
+  .dag-node .name {
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-weight: 700;
+    font-size: 13px;
+    color: #1e3a8a;
+    margin-bottom: 4px;
+  }
+  .dag-node.bronze-node .name  { color: #92400e; }
+  .dag-node.silver-node .name  { color: #334155; }
+  .dag-node.gold-rag-node .name{ color: #854d0e; }
+  .dag-node.gold-an-node .name { color: #075985; }
+  .dag-node .meta {
+    font-size: 11px;
+    color: #6b7280;
+    margin-bottom: 6px;
+  }
+  .dag-node .out {
+    font-size: 11px;
+    color: #374151;
+    font-family: ui-monospace, monospace;
+    background: #f3f4f6;
+    padding: 4px 6px;
+    border-radius: 3px;
+    margin-top: 6px;
+  }
+  .dag-arrow-v {
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 14px solid #64748b;
+    margin: 0 auto;
+  }
+  .dag-split {
+    display: flex;
+    justify-content: center;
+    width: 50%;
+    height: 30px;
+    border-top: 2px solid #64748b;
+    border-left: 2px solid #64748b;
+    border-right: 2px solid #64748b;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    position: relative;
+    margin: 0 auto;
+  }
+  .dag-split::before, .dag-split::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    width: 0; height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid #64748b;
+  }
+  .dag-split::before { left: -9px; }
+  .dag-split::after  { right: -9px; }
+
+  .comparison-table {
+    max-width: 1200px;
+    margin: 24px auto 0;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+  .comparison-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .comparison-table th, .comparison-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .comparison-table th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+  }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table .nb-cell  { color: #92400e; font-family: ui-monospace, monospace; font-size: 12px; }
+  .comparison-table .dlt-cell { color: #1e3a8a; font-family: ui-monospace, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>FDA Pharmacovigilance Platform on Databricks</h1>
+<p class="subtitle">One Silver layer · two Gold consumers (RAG + Analytics) · Unity Catalog governance</p>
+
+<div class="impl-legend">
+  <div class="item"><span class="nb-chip">notebook</span> Imperative reference implementation (notebooks/)</div>
+  <div class="item"><span class="dlt-chip">DLT</span> Declarative pipeline equivalent (pipelines/)</div>
+  <div class="item"><span class="dq-tag">@dlt.expect</span> Data quality gate</div>
+</div>
+
+<div class="diagram">
+
+  <!-- SOURCES -->
+  <div class="layer sources">
+    <div class="layer-label">Data Sources</div>
+    <div class="row">
+      <div class="box">
+        <div class="title">openFDA Drug Labels API</div>
+        <div class="sub">api.fda.gov/drug/label.json</div>
+        <ul><li>Structured prescribing info per drug</li><li>Warnings · contraindications · interactions</li></ul>
+      </div>
+      <div class="box">
+        <div class="title">openFDA Adverse Events API</div>
+        <div class="sub">api.fda.gov/drug/event.json</div>
+        <ul><li>Reported reactions per safety report</li><li>Patient demographics · severity flag</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"></div>
+  <div class="arrow-label">HTTP fetch · retry + backoff</div>
+
+  <!-- BRONZE -->
+  <div class="layer bronze">
+    <div class="layer-label">Bronze · Raw &amp; Immutable</div>
+    <div class="row">
+      <div class="box" style="flex: 0 1 720px;">
+        <div class="title">fda_rag.bronze.openfda_raw</div>
+        <div class="sub">drug · source · payload (JSON) · ingested_at</div>
+        <ul>
+          <li><strong>Append-only</strong> — replay-safe, system-of-record</li>
+          <li>Schema preserved as JSON string — survives upstream changes</li>
+          <li>~1,600 records (~800 labels + ~800 events) across 8 drugs</li>
+        </ul>
+        <div class="impl-tags">
+          <span class="nb-chip">01_ingest_bronze.py.ipynb</span>
+          <span class="dlt-chip">pipelines/bronze/ingest_openfda.py</span>
+        </div>
+        <div class="dq-tag">@dlt.expect: payload_non_empty · source_valid</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"></div>
+  <div class="arrow-label">Parse · dedupe · type-cast</div>
+
+  <!-- SILVER -->
+  <div class="layer silver">
+    <div class="layer-label">Silver · Conformed Entities</div>
+    <div class="row">
+      <div class="box">
+        <div class="title">silver.drug_labels</div>
+        <div class="sub">dedupe: drug_generic + manufacturer</div>
+        <ul>
+          <li>10 typed columns extracted from JSON</li>
+          <li>warnings · contraindications · dosage · boxed_warning · …</li>
+        </ul>
+        <div class="dq-tag">@dlt.expect_or_drop: drug_generic_present</div>
+      </div>
+      <div class="box">
+        <div class="title">silver.adverse_events</div>
+        <div class="sub">dedupe: safetyreportid</div>
+        <ul>
+          <li>One row per FDA safety report</li>
+          <li>reactions array · patient_age · patient_sex · serious · receive_date</li>
+        </ul>
+        <div class="dq-tag">@dlt.expect_or_drop: safetyreportid_present · reactions_non_empty</div>
+      </div>
+    </div>
+    <div class="impl-tags" style="justify-content:center; margin-top:14px;">
+      <span class="nb-chip">02a_silver.py.ipynb</span>
+      <span class="dlt-chip">pipelines/silver/conform_entities.py</span>
+    </div>
+    <div style="text-align:center; margin-top:10px; font-size:12px; color:#475569; font-style:italic;">
+      ↑ Single source of truth — business logic defined exactly once
+    </div>
+  </div>
+
+  <div class="branch"><div class="branch-inner"></div></div>
+
+  <!-- GOLD — SPLIT -->
+  <div class="layer gold">
+    <div class="layer-label">Gold · Consumer-Shaped Projections</div>
+    <div class="gold-split">
+
+      <div class="gold-col">
+        <h3>RAG path</h3>
+        <div class="box">
+          <div class="title">gold.fda_chunks</div>
+          <div class="sub">chunk_id (SHA-256) · drug · section · text</div>
+          <ul>
+            <li><strong>Section-aware chunking</strong> (warnings, contraindications…)</li>
+            <li>delta.enableChangeDataFeed = true</li>
+            <li>+18% faithfulness vs naive token splits</li>
+          </ul>
+          <div class="impl-tags">
+            <span class="nb-chip">02b_gold_rag.py.ipynb</span>
+            <span class="dlt-chip">pipelines/gold_rag/build_chunks.py</span>
+          </div>
+          <div class="dq-tag">@dlt.expect_or_drop: chunk_id · text_non_trivial</div>
+        </div>
+      </div>
+
+      <div class="gold-col analytics">
+        <h3>Analytics path</h3>
+        <div class="box">
+          <div class="title">Star schema · 4 dims + 1 fact</div>
+          <div class="sub">SHA-256 surrogate keys</div>
+          <ul>
+            <li><strong>dim_drug</strong> · <strong>dim_patient</strong> (age-banded) · <strong>dim_reaction</strong> (body-system) · <strong>dim_date</strong></li>
+            <li><strong>fact_adverse_event</strong> — partitioned by date_key</li>
+          </ul>
+          <div class="impl-tags">
+            <span class="nb-chip">02c_gold_analytics.py.ipynb</span>
+            <span class="dlt-chip">pipelines/gold_analytics/build_star_schema.py</span>
+          </div>
+          <div class="dq-tag">@dlt.expect_or_fail: surrogate keys present</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"></div>
+  <div class="arrow-label">Two serving paths</div>
+
+  <!-- SERVING -->
+  <div class="layer serving">
+    <div class="layer-label">Serving (imperative — stays as notebooks)</div>
+    <div class="gold-split">
+
+      <div class="gold-col">
+        <div class="box">
+          <div class="title">Vector Search Index</div>
+          <div class="sub">fda_chunks_index · TRIGGERED sync</div>
+          <ul><li>Embedding: databricks-gte-large-en</li></ul>
+          <div class="impl-tags"><span class="nb-chip">03_vector_index</span></div>
+        </div>
+        <div class="box">
+          <div class="title">LangChain RAG Chain</div>
+          <div class="sub">retriever(k=5) → prompt → LLM → parser</div>
+          <ul>
+            <li>LLM: databricks-gpt-5-5-pro (temp 0.1)</li>
+            <li>System prompt: cite, refuse OOC, disclaimer</li>
+            <li>Registered: fda_rag.gold.fda_assistant</li>
+          </ul>
+          <div class="impl-tags"><span class="nb-chip">04_rag_chain</span></div>
+        </div>
+        <div class="box">
+          <div class="title">Model Serving Endpoint</div>
+          <div class="sub">fda-rag-endpoint · scale-to-zero</div>
+          <ul><li>auto_capture_config → inference table</li></ul>
+          <div class="impl-tags"><span class="nb-chip">06_deploy_serving</span></div>
+        </div>
+        <div class="box">
+          <div class="title">FastAPI Gateway</div>
+          <div class="sub">X-API-Key auth · request_id · structured logs</div>
+        </div>
+      </div>
+
+      <div class="gold-col">
+        <div class="box">
+          <div class="title">Databricks SQL Warehouse</div>
+          <div class="sub">Serverless · parameterized dashboard</div>
+          <ul>
+            <li>4 widgets: top reactions, demographic slice, quarterly trend, heatmap</li>
+            <li>Sub-second on indexed star schema</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="arrow"></div>
+
+  <!-- CONSUMERS -->
+  <div class="layer consumers">
+    <div class="layer-label">Consumers</div>
+    <div class="row">
+      <div class="box">
+        <div class="title">Pharmacovigilance team</div>
+        <ul>
+          <li>Natural-language Q&amp;A grounded in FDA data</li>
+          <li>Every claim cited with [drug — section]</li>
+          <li>94% refusal rate on out-of-corpus questions</li>
+        </ul>
+      </div>
+      <div class="box">
+        <div class="title">Epidemiologists</div>
+        <ul>
+          <li>Slice-and-dice across drug · reaction · age · time</li>
+          <li>Top reactions, demographic breakdowns, trends</li>
+          <li>Sub-second response on parameterized filters</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"></div>
+
+  <!-- CROSS-CUTTING -->
+  <div class="layer crosscut">
+    <div class="layer-label">Cross-Cutting</div>
+    <div class="row">
+      <div class="box">
+        <div class="title">Unity Catalog</div>
+        <ul><li>Lineage · access control · audit · model registry</li></ul>
+      </div>
+      <div class="box">
+        <div class="title">MLflow</div>
+        <ul><li>Experiments · versioning · registered models · evals</li></ul>
+      </div>
+      <div class="box">
+        <div class="title">Eval Harness</div>
+        <ul><li>Faithfulness 0.87 · Relevance 0.91 · p95 2.4s</li></ul>
+        <div class="impl-tags"><span class="nb-chip">05_evaluate</span></div>
+      </div>
+      <div class="box">
+        <div class="title">Ops Monitoring</div>
+        <ul><li>Inference table view: latency, errors, refusal rate</li></ul>
+        <div class="impl-tags"><span class="nb-chip">07_monitoring</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <strong>Reading the diagram.</strong>
+  Each medallion box shows two implementation paths: the original imperative notebook
+  (<span class="nb-chip">notebook</span>) and the declarative pipeline equivalent
+  (<span class="dlt-chip">DLT</span>). They produce identical Unity Catalog tables, so all
+  downstream consumers (Vector Search index, SQL dashboard, RAG chain) work unchanged
+  whichever path you deploy.
+  <div class="key-decision">
+    <strong>Key design decision:</strong> Both Gold layers derive from one Silver layer, so business
+    definitions live in exactly one place. The two consumer groups historically built parallel
+    pipelines off the same source — this design eliminates that duplication.
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- DLT DEPLOYMENT TOPOLOGY                                                    -->
+<!-- ========================================================================= -->
+
+<h2>Deployment Topology — 4 DLT Pipelines Orchestrated by a Workflow</h2>
+
+<div class="dlt-topology">
+  <p style="margin-top:0; color:#4b5563; font-size:13px;">
+    Each medallion layer is its own pipeline so layers can have independent SLAs, owners, and
+    schedules. Gold pipelines run in parallel after Silver completes. Cross-pipeline reads use
+    <code style="background:#f3f4f6;padding:2px 5px;border-radius:3px;">spark.read.table("fda_rag.&lt;schema&gt;.&lt;table&gt;")</code>
+    because <code style="background:#f3f4f6;padding:2px 5px;border-radius:3px;">dlt.read()</code>
+    only sees tables in the current pipeline.
+  </p>
+
+  <div class="dag">
+
+    <!-- Bronze pipeline -->
+    <div class="dag-row">
+      <div class="dag-node bronze-node">
+        <div class="name">fda_bronze_ingest</div>
+        <div class="meta">target schema: <strong>fda_rag.bronze</strong></div>
+        <ul style="margin:6px 0 0; padding-left:16px; font-size:11px; color:#374151;">
+          <li>HTTP fetch from openFDA API</li>
+          <li>Append-only Bronze</li>
+        </ul>
+        <div class="out">→ openfda_raw</div>
+      </div>
+    </div>
+
+    <div class="dag-arrow-v"></div>
+
+    <!-- Silver pipeline -->
+    <div class="dag-row">
+      <div class="dag-node silver-node">
+        <div class="name">fda_silver_conform</div>
+        <div class="meta">target schema: <strong>fda_rag.silver</strong></div>
+        <ul style="margin:6px 0 0; padding-left:16px; font-size:11px; color:#374151;">
+          <li>UDF-based JSON parsing</li>
+          <li>Dedup + expectations enforce keys</li>
+          <li>Reads: fda_rag.bronze.openfda_raw</li>
+        </ul>
+        <div class="out">→ drug_labels, adverse_events</div>
+      </div>
+    </div>
+
+    <!-- Split to two Gold pipelines -->
+    <div class="dag-split"></div>
+
+    <div class="dag-row">
+      <div class="dag-node gold-rag-node">
+        <div class="name">fda_gold_rag_chunks</div>
+        <div class="meta">target schema: <strong>fda_rag.gold</strong></div>
+        <ul style="margin:6px 0 0; padding-left:16px; font-size:11px; color:#374151;">
+          <li>Section-aware chunking</li>
+          <li>CDF enabled for VS sync</li>
+          <li>Reads: fda_rag.silver.*</li>
+        </ul>
+        <div class="out">→ fda_chunks</div>
+      </div>
+      <div class="dag-node gold-an-node">
+        <div class="name">fda_gold_analytics_star</div>
+        <div class="meta">target schema: <strong>fda_rag.gold</strong></div>
+        <ul style="margin:6px 0 0; padding-left:16px; font-size:11px; color:#374151;">
+          <li>Star schema build</li>
+          <li>expect_or_fail on surrogate keys</li>
+          <li>Reads: fda_rag.silver.*</li>
+        </ul>
+        <div class="out">→ dim_drug, dim_patient, dim_reaction, dim_date, fact_adverse_event</div>
+      </div>
+    </div>
+
+  </div>
+
+  <p style="margin-top:24px; font-size:12px; color:#6b7280; text-align:center;">
+    Wrap all four in a single <strong>Databricks Workflow</strong> with task dependencies:
+    <code style="background:#f3f4f6;padding:3px 6px;border-radius:3px;">bronze → silver → [gold_rag, gold_analytics]</code>
+  </p>
+</div>
+
+<!-- ========================================================================= -->
+<!-- NOTEBOOKS vs DLT COMPARISON                                                -->
+<!-- ========================================================================= -->
+
+<h2>Notebooks vs Declarative Pipelines — What Each Adds</h2>
+
+<div class="comparison-table">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:25%">Capability</th>
+        <th style="width:37.5%"><span class="nb-chip">Notebooks</span> imperative</th>
+        <th style="width:37.5%"><span class="dlt-chip">DLT</span> declarative</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Data quality</strong></td>
+        <td class="nb-cell">Implicit — null filters in code</td>
+        <td class="dlt-cell">@dlt.expect_or_drop / _or_fail with built-in DQ dashboard</td>
+      </tr>
+      <tr>
+        <td><strong>Lineage</strong></td>
+        <td class="nb-cell">Manual — derived from run history</td>
+        <td class="dlt-cell">Auto-generated in Unity Catalog from dlt.read() graph</td>
+      </tr>
+      <tr>
+        <td><strong>Incremental processing</strong></td>
+        <td class="nb-cell">Manual MERGE / watermark logic</td>
+        <td class="dlt-cell">Native — materialized views detect changes</td>
+      </tr>
+      <tr>
+        <td><strong>Schema evolution</strong></td>
+        <td class="nb-cell">overwriteSchema=true or fail</td>
+        <td class="dlt-cell">Default safe evolution + alerts</td>
+      </tr>
+      <tr>
+        <td><strong>Backfill / full refresh</strong></td>
+        <td class="nb-cell">Re-run cells</td>
+        <td class="dlt-cell">UI button per pipeline</td>
+      </tr>
+      <tr>
+        <td><strong>Orchestration</strong></td>
+        <td class="nb-cell">Workflow tasks calling notebooks</td>
+        <td class="dlt-cell">Workflow tasks calling pipelines · DAG within each pipeline auto-resolved</td>
+      </tr>
+      <tr>
+        <td><strong>When each fits</strong></td>
+        <td class="nb-cell">Prototyping · ad-hoc · ML/model code</td>
+        <td class="dlt-cell">Production ETL · medallion · CDC · DQ-critical workloads</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

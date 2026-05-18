@@ -1,0 +1,32 @@
+{
+  "name": "fda_bronze_ingest",
+  "edition": "ADVANCED",
+  "channel": "CURRENT",
+  "photon": true,
+  "continuous": false,
+  "development": true,
+  "catalog": "fda_rag",
+  "target": "bronze",
+  "libraries": [
+    {
+      "file": {
+        "path": "/Workspace/Users/<your-user>@<your-domain>/fda_pharma_platform/pipelines/bronze/ingest_openfda.py"
+      }
+    }
+  ],
+  "clusters": [
+    {
+      "label": "default",
+      "num_workers": 1,
+      "node_type_id": "i3.xlarge",
+      "autoscale": {
+        "min_workers": 1,
+        "max_workers": 2,
+        "mode": "ENHANCED"
+      }
+    }
+  ],
+  "configuration": {
+    "pipelines.applyChangesPreviewEnabled": "true"
+  }
+}

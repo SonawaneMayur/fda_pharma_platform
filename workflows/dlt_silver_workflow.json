@@ -1,0 +1,23 @@
+{
+  "name": "fda_dlt_silver_table_triggered",
+  "description": "Fires automatically when fda_rag.bronze.openfda_raw is updated by the Bronze workflow.",
+  "trigger": {
+    "table_update": {
+      "table_names": ["fda_rag.bronze.openfda_raw"],
+      "condition": "ANY_UPDATED",
+      "min_time_between_triggers_seconds": 600,
+      "wait_after_last_change_seconds": 60
+    },
+    "pause_status": "UNPAUSED"
+  },
+  "max_concurrent_runs": 1,
+  "tasks": [
+    {
+      "task_key": "run_silver_pipeline",
+      "pipeline_task": {
+        "pipeline_id": "<silver-pipeline-id>",
+        "full_refresh": false
+      }
+    }
+  ]
+}

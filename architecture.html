@@ -362,7 +362,7 @@
 </head>
 <body>
 
-<h1>FDA Pharmacovigilance Platform on Databricks</h1>
+<h1 id="top">FDA Pharmacovigilance Platform on Databricks</h1>
 <p class="subtitle">One Silver layer · two Gold consumers (RAG + Analytics) · Unity Catalog governance</p>
 
 <div class="impl-legend">
@@ -371,7 +371,113 @@
   <div class="item"><span class="dq-tag">@dlt.expect</span> Data quality gate</div>
 </div>
 
-<div class="diagram">
+<style>
+  html { scroll-behavior: smooth; }
+
+  .toc-card {
+    max-width: 1200px;
+    margin: 0 auto 32px;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    padding: 18px 24px;
+  }
+  .toc-card h3 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #1a202c;
+    font-weight: 700;
+  }
+  .toc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 24px;
+  }
+  .toc-grid a {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    text-decoration: none;
+    color: #1f2937;
+    font-size: 13px;
+    border-radius: 5px;
+    transition: background 0.12s, color 0.12s;
+    border: 1px solid transparent;
+  }
+  .toc-grid a:hover {
+    background: #f1f5f9;
+    color: #1e3a8a;
+    border-color: #cbd5e1;
+  }
+  .toc-num {
+    display: inline-block;
+    background: #1f2937;
+    color: white;
+    font-size: 10px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    border-radius: 50%;
+    margin-right: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .toc-grid a:hover .toc-num {
+    background: #1e3a8a;
+  }
+  .toc-arrow {
+    margin-left: auto;
+    color: #94a3b8;
+    font-size: 14px;
+  }
+
+  /* anchor scroll offset so section tops aren't flush against the viewport edge */
+  h2[id], div[id] { scroll-margin-top: 20px; }
+
+  /* Back-to-top floating button */
+  .back-to-top {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: #1f2937;
+    color: white;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    font-size: 20px;
+    font-weight: 700;
+    opacity: 0.85;
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 100;
+  }
+  .back-to-top:hover {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+</style>
+
+<div class="toc-card">
+  <h3>📑 Jump to section</h3>
+  <div class="toc-grid">
+    <a href="#main-architecture"><span class="toc-num">1</span>Architecture Overview <span style="color:#6b7280; font-size:11px; margin-left:6px;">— Medallion + serving + consumers</span><span class="toc-arrow">→</span></a>
+    <a href="#dlt-topology"><span class="toc-num">2</span>DLT Deployment Topology <span style="color:#6b7280; font-size:11px; margin-left:6px;">— 4 pipelines</span><span class="toc-arrow">→</span></a>
+    <a href="#comparison"><span class="toc-num">3</span>Notebooks vs Declarative <span style="color:#6b7280; font-size:11px; margin-left:6px;">— side by side</span><span class="toc-arrow">→</span></a>
+    <a href="#orchestration"><span class="toc-num">4</span>Event-Driven Orchestration <span style="color:#6b7280; font-size:11px; margin-left:6px;">— polling + cascade</span><span class="toc-arrow">→</span></a>
+    <a href="#governance"><span class="toc-num">5</span>Governance — RLS &amp; PII <span style="color:#6b7280; font-size:11px; margin-left:6px;">— multi-tenant</span><span class="toc-arrow">→</span></a>
+    <a href="#deployment"><span class="toc-num">6</span>Asset Bundle Deployment <span style="color:#6b7280; font-size:11px; margin-left:6px;">— dev → prod</span><span class="toc-arrow">→</span></a>
+  </div>
+</div>
+
+<div class="diagram" id="main-architecture">
 
   <!-- SOURCES -->
   <div class="layer sources">
@@ -625,7 +731,7 @@
 <!-- DLT DEPLOYMENT TOPOLOGY                                                    -->
 <!-- ========================================================================= -->
 
-<h2>Deployment Topology — 4 DLT Pipelines Orchestrated by a Workflow</h2>
+<h2 id="dlt-topology">Deployment Topology — 4 DLT Pipelines Orchestrated by a Workflow</h2>
 
 <div class="dlt-topology">
   <p style="margin-top:0; color:#4b5563; font-size:13px;">
@@ -705,7 +811,7 @@
 <!-- NOTEBOOKS vs DLT COMPARISON                                                -->
 <!-- ========================================================================= -->
 
-<h2>Notebooks vs Declarative Pipelines — What Each Adds</h2>
+<h2 id="comparison">Notebooks vs Declarative Pipelines — What Each Adds</h2>
 
 <div class="comparison-table">
   <table>
@@ -987,7 +1093,7 @@
   }
 </style>
 
-<h2>Event-Driven Orchestration — Smart Polling Gate + Table-Update Cascade</h2>
+<h2 id="orchestration">Event-Driven Orchestration — Smart Polling Gate + Table-Update Cascade</h2>
 
 <div class="orchestration">
 
@@ -1244,7 +1350,7 @@
   }
 </style>
 
-<h2>Governance — Multi-Tenant Row-Level Security &amp; PII Masking</h2>
+<h2 id="governance">Governance — Multi-Tenant Row-Level Security &amp; PII Masking</h2>
 
 <div class="governance">
 
@@ -1436,7 +1542,7 @@
   .bundle-excluded strong { color: #1f2937; }
 </style>
 
-<h2>Deployment Lifecycle — Asset Bundles (dev → staging → prod)</h2>
+<h2 id="deployment">Deployment Lifecycle — Asset Bundles (dev → staging → prod)</h2>
 
 <div class="deployment">
 
@@ -1537,6 +1643,8 @@
   </div>
 
 </div>
+
+<a href="#top" class="back-to-top" aria-label="Back to top" title="Back to top">↑</a>
 
 </body>
 </html>

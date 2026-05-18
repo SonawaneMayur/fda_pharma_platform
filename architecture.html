@@ -747,5 +747,410 @@
   </table>
 </div>
 
+<!-- ========================================================================= -->
+<!-- EVENT-DRIVEN ORCHESTRATION                                                 -->
+<!-- ========================================================================= -->
+
+<style>
+  .orchestration {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    padding: 32px 28px;
+  }
+  .flow-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 28px;
+    align-items: start;
+  }
+  .flow-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .step {
+    background: white;
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border: 1.5px solid #cbd5e1;
+    min-width: 360px;
+    max-width: 460px;
+    text-align: center;
+  }
+  .step .step-title {
+    font-weight: 700;
+    font-size: 13px;
+    color: #111827;
+    margin-bottom: 4px;
+  }
+  .step .step-meta {
+    font-size: 11px;
+    color: #6b7280;
+    font-family: ui-monospace, "SF Mono", monospace;
+  }
+  .step.schedule  { border-color: #0e7490; background: #ecfeff; }
+  .step.poll      { border-color: #0369a1; background: #eff6ff; }
+  .step.gate      { border-color: #ea580c; background: #fff7ed; border-style: dashed; border-width: 2px; }
+  .step.bronze    { border-color: #d97706; background: #fef3c7; }
+  .step.silver    { border-color: #64748b; background: #f1f5f9; }
+  .step.gold      { border-color: #ca8a04; background: #fef9c3; }
+  .step.skip      { border-color: #dc2626; background: #fef2f2; opacity: 0.85; }
+
+  .step-badge {
+    display: inline-block;
+    font-family: ui-monospace, monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .step.schedule .step-badge { background: #0e7490; color: white; }
+  .step.poll .step-badge     { background: #0369a1; color: white; }
+  .step.gate .step-badge     { background: #ea580c; color: white; }
+  .step.bronze .step-badge   { background: #92400e; color: white; }
+  .step.silver .step-badge   { background: #334155; color: white; }
+  .step.gold .step-badge     { background: #854d0e; color: white; }
+  .step.skip .step-badge     { background: #991b1b; color: white; }
+
+  .arrow-v {
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 14px solid #64748b;
+    margin: 0 0;
+    position: relative;
+  }
+  .arrow-stem {
+    width: 2px;
+    height: 22px;
+    background: #64748b;
+    margin: 0;
+  }
+  .arrow-label {
+    font-size: 11px;
+    color: #4b5563;
+    font-style: italic;
+    margin: 4px 0 4px;
+    padding: 2px 8px;
+    background: #f1f5f9;
+    border-radius: 3px;
+  }
+
+  /* Branching split for parallel Gold */
+  .split-line {
+    width: 60%;
+    height: 30px;
+    border-top: 2px solid #64748b;
+    border-left: 2px solid #64748b;
+    border-right: 2px solid #64748b;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    position: relative;
+    margin: 0 auto;
+  }
+  .split-line::before, .split-line::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid #64748b;
+  }
+  .split-line::before { left: -9px; }
+  .split-line::after  { right: -9px; }
+
+  .parallel-row {
+    display: flex;
+    gap: 36px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* Skip branch */
+  .skip-branch {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+  }
+  .skip-line {
+    width: 80px;
+    height: 2px;
+    background: #dc2626;
+    position: relative;
+  }
+  .skip-line::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -6px;
+    border: 7px solid transparent;
+    border-left-color: #dc2626;
+  }
+  .skip-label {
+    font-size: 10px;
+    color: #991b1b;
+    font-weight: 600;
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+
+  /* Side annotations */
+  .annotations {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .annotation {
+    background: #f8fafc;
+    border-left: 3px solid #334155;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #374151;
+  }
+  .annotation .ann-title {
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 4px;
+    font-size: 12px;
+  }
+  .annotation .ann-tag {
+    display: inline-block;
+    background: #1f2937;
+    color: white;
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-right: 4px;
+    text-transform: uppercase;
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+  }
+  .annotation.win { border-left-color: #16a34a; background: #f0fdf4; }
+  .annotation.win .ann-title { color: #14532d; }
+  .annotation.cost { border-left-color: #ea580c; background: #fff7ed; }
+  .annotation.cost .ann-title { color: #7c2d12; }
+
+  /* Before/after panel */
+  .before-after {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 32px auto 0;
+  }
+  .panel {
+    border-radius: 10px;
+    padding: 18px 20px;
+    border: 1.5px solid;
+  }
+  .panel.before { background: #fef2f2; border-color: #fca5a5; }
+  .panel.after  { background: #f0fdf4; border-color: #86efac; }
+  .panel h3 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .panel.before h3 { color: #991b1b; }
+  .panel.after h3  { color: #14532d; }
+  .panel ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+    font-size: 12px;
+    color: #374151;
+    line-height: 1.6;
+  }
+</style>
+
+<h2>Event-Driven Orchestration — Smart Polling Gate + Table-Update Cascade</h2>
+
+<div class="orchestration">
+
+  <p style="margin:0 0 20px; font-size:13px; color:#4b5563; text-align:center;">
+    openFDA has no webhooks → a cheap polling task acts as the gate.
+    Once Bronze commits, Silver and Gold cascade automatically via Unity Catalog
+    <code style="background:#f3f4f6;padding:2px 5px;border-radius:3px;">table_update</code> triggers.
+    Each layer is decoupled — it knows only its upstream table.
+  </p>
+
+  <div class="flow-grid">
+
+    <!-- LEFT COLUMN: Flow -->
+    <div class="flow-col">
+
+      <!-- Schedule trigger -->
+      <div class="step schedule">
+        <span class="step-badge">Cron trigger · only clock-based step</span>
+        <div class="step-title">Daily schedule · 06:00 UTC</div>
+        <div class="step-meta">quartz_cron_expression: "0 0 6 * * ?"</div>
+      </div>
+
+      <div class="arrow-stem"></div>
+      <div class="arrow-v"></div>
+
+      <!-- Polling task -->
+      <div class="step poll">
+        <span class="step-badge">Polling task · ~5s · &lt;$0.01</span>
+        <div class="step-title">poll_openfda</div>
+        <div class="step-meta">HEAD-style: read meta.results.total per drug</div>
+        <div class="step-meta">notebook: 00b_polling_check · DLT: _polling_check.py</div>
+      </div>
+
+      <div class="arrow-stem"></div>
+      <div class="arrow-v"></div>
+
+      <!-- Gate -->
+      <div style="display:flex; align-items:center; gap:20px;">
+        <div class="step gate">
+          <span class="step-badge">Decision gate</span>
+          <div class="step-title">data_changed?</div>
+          <div class="step-meta">condition_task: EQUAL_TO "true"</div>
+        </div>
+        <div style="position:relative; display:flex; align-items:center;">
+          <span class="skip-label">false → skip</span>
+          <div class="skip-line"></div>
+          <div class="step skip" style="min-width:180px;">
+            <span class="step-badge">No-op · $0</span>
+            <div class="step-title">Skip downstream</div>
+            <div class="step-meta">~3 days/week typical</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow-stem"></div>
+      <div class="arrow-label">true</div>
+      <div class="arrow-v"></div>
+
+      <!-- Bronze -->
+      <div class="step bronze">
+        <span class="step-badge">Bronze layer · ~3-5 min</span>
+        <div class="step-title">fda_bronze_ingest pipeline · OR notebook 01</div>
+        <div class="step-meta">→ fda_rag.bronze.openfda_raw (append)</div>
+      </div>
+
+      <div class="arrow-stem"></div>
+      <div class="arrow-label">commit fires table_update event</div>
+      <div class="arrow-v"></div>
+
+      <!-- Silver -->
+      <div class="step silver">
+        <span class="step-badge">Triggered by table_update on bronze.openfda_raw</span>
+        <div class="step-title">fda_silver_conform pipeline · OR notebook 02a</div>
+        <div class="step-meta">→ silver.drug_labels, silver.adverse_events</div>
+      </div>
+
+      <div class="arrow-stem"></div>
+      <div class="arrow-label">commit fires table_update on silver.*</div>
+      <div class="arrow-v"></div>
+
+      <!-- Split to two Gold -->
+      <div class="split-line"></div>
+
+      <div class="parallel-row">
+        <div class="step gold" style="min-width:280px;">
+          <span class="step-badge">Triggered by table_update on silver.*</span>
+          <div class="step-title">fda_gold_rag_chunks · OR notebook 02b</div>
+          <div class="step-meta">→ gold.fda_chunks (CDF on)</div>
+          <div class="step-meta" style="margin-top:6px; color:#854d0e;">downstream: VS index auto-sync</div>
+        </div>
+        <div class="step gold" style="min-width:280px;">
+          <span class="step-badge">Triggered by table_update on silver.*</span>
+          <div class="step-title">fda_gold_analytics_star · OR notebook 02c</div>
+          <div class="step-meta">→ star schema (4 dims + 1 fact)</div>
+          <div class="step-meta" style="margin-top:6px; color:#854d0e;">downstream: SQL dashboard refreshes</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Annotations -->
+    <div class="annotations">
+
+      <div class="annotation cost">
+        <div class="ann-title"><span class="ann-tag">Why poll?</span></div>
+        openFDA is a REST API with no webhooks or push notifications.
+        The cheapest reliable change signal is asking <code>meta.results.total</code> with limit=1.
+        ~5 seconds, fraction of a cent per check.
+      </div>
+
+      <div class="annotation win">
+        <div class="ann-title"><span class="ann-tag">Win: cost</span></div>
+        FDA updates ~3-4 days/week. On the other 3-4 days, the entire downstream
+        chain stays at <strong>zero compute cost</strong>. Across the year that's roughly
+        50-60% savings vs unconditional cron.
+      </div>
+
+      <div class="annotation">
+        <div class="ann-title"><span class="ann-tag">Trigger choice</span></div>
+        Cron is used <strong>only at Bronze</strong>. Everything downstream is event-driven
+        via <code>table_update</code> triggers. No tight scheduling, no fragile time-coupling
+        between layers.
+      </div>
+
+      <div class="annotation win">
+        <div class="ann-title"><span class="ann-tag">Win: decoupling</span></div>
+        Each layer's workflow only knows its <strong>upstream table</strong> —
+        not who writes to it, when, or how often. Bronze can run twice today; Silver fires twice.
+        Bronze can be paused; downstream stops on its own.
+      </div>
+
+      <div class="annotation">
+        <div class="ann-title"><span class="ann-tag">Latency</span></div>
+        <code>wait_after_last_change_seconds: 60</code> debounce + ~30s scheduling overhead.
+        End-to-end Bronze trigger → Gold refreshed: <strong>~3-5 minutes</strong> on a typical run.
+      </div>
+
+      <div class="annotation cost">
+        <div class="ann-title"><span class="ann-tag">Anti-pattern avoided</span></div>
+        Cron-only at every layer means tight scheduling (Silver at 06:30, Gold at 06:45) —
+        fragile to Bronze delays. Continuous mode means 24/7 cluster cost for a daily-updating
+        source. We avoid both.
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- BEFORE / AFTER COMPARISON -->
+<div class="before-after">
+  <div class="panel before">
+    <h3>❌ Naïve: Cron-only at every layer</h3>
+    <ul>
+      <li>Bronze runs unconditionally → appends duplicate rows on no-change days</li>
+      <li>Silver scheduled at 06:30 — fails or runs on stale data if Bronze ran long</li>
+      <li>Gold scheduled at 06:45 — fragile to upstream delays</li>
+      <li>Always-on cluster cost even on no-change days</li>
+      <li>No clean "what changed and why" audit trail</li>
+    </ul>
+  </div>
+  <div class="panel after">
+    <h3>✓ Event-driven: poll → cascade</h3>
+    <ul>
+      <li>Bronze runs only when openFDA totals change → no duplicate rows</li>
+      <li>Silver fires within ~1-2 min of Bronze commit (no clock coupling)</li>
+      <li>Both Gold layers fire in parallel after Silver commits</li>
+      <li>Compute cost ≈ 0 on no-change days (~50-60% annual savings)</li>
+      <li>Full audit chain: state table + run history</li>
+    </ul>
+  </div>
+</div>
+
 </body>
 </html>

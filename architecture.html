@@ -371,6 +371,131 @@
   <div class="item"><span class="dq-tag">@dlt.expect</span> Data quality gate</div>
 </div>
 
+<!-- ========================================================================= -->
+<!-- PROBLEM STATEMENT                                                          -->
+<!-- ========================================================================= -->
+
+<style>
+  .problem-statement {
+    max-width: 1200px;
+    margin: 0 auto 24px;
+    background: linear-gradient(to right, #fef2f2 0%, #ffffff 50%, #f0fdf4 100%);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 24px 28px;
+    position: relative;
+  }
+  .problem-statement::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    bottom: 0;
+    width: 4px;
+    background: #1e3a8a;
+    border-radius: 12px 0 0 12px;
+  }
+  .problem-label {
+    display: inline-block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #1e3a8a;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .problem-statement h3 {
+    margin: 0 0 10px;
+    font-size: 18px;
+    color: #1a202c;
+    font-weight: 700;
+  }
+  .problem-quote {
+    font-size: 13px;
+    color: #4b5563;
+    font-style: italic;
+    border-left: 3px solid #cbd5e1;
+    padding: 6px 14px;
+    margin: 12px 0 18px;
+    line-height: 1.6;
+    background: rgba(255,255,255,0.6);
+  }
+  .pain-solution-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .pain-panel, .solution-panel {
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 13px;
+  }
+  .pain-panel    { background: rgba(254,242,242,0.85); border: 1px solid #fca5a5; }
+  .solution-panel{ background: rgba(240,253,244,0.85); border: 1px solid #86efac; }
+  .pain-panel h4, .solution-panel h4 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .pain-panel h4    { color: #991b1b; }
+  .solution-panel h4{ color: #14532d; }
+  .pain-panel ul, .solution-panel ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+    color: #374151;
+    line-height: 1.6;
+  }
+  .who-cares {
+    margin-top: 16px;
+    background: #eff6ff;
+    border-left: 4px solid #1e3a8a;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #1e3a8a;
+  }
+  .who-cares strong { color: #1e3a8a; }
+</style>
+
+<div class="problem-statement" id="problem-statement">
+  <span class="problem-label">The Business Problem</span>
+  <h3>Two consumer groups, same data, parallel pipelines — until now.</h3>
+
+  <div class="problem-quote">
+    Pharmacovigilance teams spend hours per safety inquiry searching FDA labels and adverse-event reports.
+    Epidemiologists need slice-and-dice analytics over the same data. Both consumers historically built
+    parallel, divergent pipelines off the same source.
+  </div>
+
+  <div class="pain-solution-grid">
+    <div class="pain-panel">
+      <h4>❌ The obvious approach</h4>
+      <ul>
+        <li>Two parallel pipelines, one per consumer team</li>
+        <li>Business definitions duplicated → analysts argue about whose count is right</li>
+        <li>Schema changes happen twice</li>
+        <li>Two sets of code to maintain</li>
+        <li>Two access models to govern separately</li>
+      </ul>
+    </div>
+    <div class="solution-panel">
+      <h4>✓ This project's load-bearing decision</h4>
+      <ul>
+        <li><strong>One Silver layer</strong> — business logic defined exactly once</li>
+        <li><strong>Two Gold projections</strong> — RAG chunks + star schema, both derived from Silver</li>
+        <li>Same numbers everywhere; analysts stop arguing</li>
+        <li>Schema changes in one place, propagate to both</li>
+        <li>Unity Catalog governs everything under one access model</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="who-cares">
+    <strong>Why this design matters:</strong> adding a third consumer (e.g., a regulatory affairs export
+    or a clinical trial enrollment dashboard) is a <em>new Gold projection</em>, not a new pipeline.
+    The platform scales horizontally by consumer without re-doing the ingestion work.
+  </div>
+</div>
+
 <style>
   html { scroll-behavior: smooth; }
 
@@ -468,12 +593,14 @@
 <div class="toc-card">
   <h3>📑 Jump to section</h3>
   <div class="toc-grid">
-    <a href="#main-architecture"><span class="toc-num">1</span>Architecture Overview <span style="color:#6b7280; font-size:11px; margin-left:6px;">— Medallion + serving + consumers</span><span class="toc-arrow">→</span></a>
+    <a href="#problem-statement"><span class="toc-num">0</span>Problem Statement <span style="color:#6b7280; font-size:11px; margin-left:6px;">— why this exists</span><span class="toc-arrow">→</span></a>
+    <a href="#main-architecture"><span class="toc-num">1</span>Architecture Overview <span style="color:#6b7280; font-size:11px; margin-left:6px;">— medallion + serving</span><span class="toc-arrow">→</span></a>
     <a href="#dlt-topology"><span class="toc-num">2</span>DLT Deployment Topology <span style="color:#6b7280; font-size:11px; margin-left:6px;">— 4 pipelines</span><span class="toc-arrow">→</span></a>
     <a href="#comparison"><span class="toc-num">3</span>Notebooks vs Declarative <span style="color:#6b7280; font-size:11px; margin-left:6px;">— side by side</span><span class="toc-arrow">→</span></a>
     <a href="#orchestration"><span class="toc-num">4</span>Event-Driven Orchestration <span style="color:#6b7280; font-size:11px; margin-left:6px;">— polling + cascade</span><span class="toc-arrow">→</span></a>
     <a href="#governance"><span class="toc-num">5</span>Governance — RLS &amp; PII <span style="color:#6b7280; font-size:11px; margin-left:6px;">— multi-tenant</span><span class="toc-arrow">→</span></a>
     <a href="#deployment"><span class="toc-num">6</span>Asset Bundle Deployment <span style="color:#6b7280; font-size:11px; margin-left:6px;">— dev → prod</span><span class="toc-arrow">→</span></a>
+    <a href="#playbook"><span class="toc-num">7</span>Implementation Playbook <span style="color:#6b7280; font-size:11px; margin-left:6px;">— end-to-end walkthrough</span><span class="toc-arrow">→</span></a>
   </div>
 </div>
 
@@ -1640,6 +1767,491 @@
     <code style="background:#fff; padding:1px 5px; border-radius:3px;">03_vector_index</code>,
     <code style="background:#fff; padding:1px 5px; border-radius:3px;">08_setup_rls</code>).
     The pattern: <em>bundles for repeatable resources, setup notebooks for foundational state.</em>
+  </div>
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- IMPLEMENTATION PLAYBOOK — END-TO-END WALKTHROUGH                           -->
+<!-- ========================================================================= -->
+
+<style>
+  .playbook {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .playbook-summary {
+    display: flex;
+    justify-content: space-around;
+    background: #1f2937;
+    color: white;
+    padding: 18px 24px;
+    border-radius: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .summary-stat {
+    text-align: center;
+    min-width: 100px;
+  }
+  .summary-stat .stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fbbf24;
+    font-family: ui-monospace, monospace;
+  }
+  .summary-stat .stat-label {
+    font-size: 11px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+  .phase-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .phase-card {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    padding: 20px 22px;
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .phase-number {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #1e3a8a;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    flex-shrink: 0;
+    font-family: ui-monospace, monospace;
+  }
+  .phase-content { display: flex; flex-direction: column; gap: 12px; }
+  .phase-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .phase-head h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #1a202c;
+    border: none;
+    padding: 0;
+  }
+  .phase-time {
+    background: #f3f4f6;
+    color: #4b5563;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: ui-monospace, monospace;
+  }
+  .phase-body {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 14px;
+  }
+  .phase-activities, .phase-verification {
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .phase-activities {
+    background: #f8fafc;
+    border-left: 3px solid #64748b;
+  }
+  .phase-verification {
+    background: #f0fdf4;
+    border-left: 3px solid #16a34a;
+  }
+  .phase-activities h5, .phase-verification h5 {
+    margin: 0 0 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #1f2937;
+    font-weight: 700;
+  }
+  .phase-verification h5 { color: #14532d; }
+  .phase-activities ul, .phase-verification ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12px;
+    color: #374151;
+    line-height: 1.6;
+  }
+  .phase-verification ul { color: #14532d; }
+  .phase-activities code, .phase-verification code {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: ui-monospace, monospace;
+  }
+  .phase-files {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding-top: 4px;
+    align-items: center;
+  }
+  .phase-files .label {
+    font-size: 10px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  .file-chip {
+    background: #1f2937;
+    color: #fbbf24;
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+  .file-chip.ui  { background: #5b21b6; color: white; }
+  .file-chip.cli { background: #065f46; color: white; }
+
+  .playbook-finale {
+    margin-top: 20px;
+    background: #ecfdf5;
+    border: 1.5px solid #10b981;
+    border-radius: 10px;
+    padding: 18px 22px;
+    font-size: 13px;
+    color: #064e3b;
+  }
+  .playbook-finale strong { color: #064e3b; }
+</style>
+
+<h2 id="playbook">Implementation Playbook — End-to-End Walkthrough</h2>
+
+<div class="playbook">
+
+  <p style="font-size:13px; color:#4b5563; margin:0 0 16px;">
+    The full path from a clean Databricks workspace to a deployed RAG endpoint + analytics dashboard,
+    in 8 phases. Each phase has explicit activities, verification, and the files touched.
+  </p>
+
+  <div class="playbook-summary">
+    <div class="summary-stat"><div class="stat-value">~2 hr</div><div class="stat-label">end-to-end</div></div>
+    <div class="summary-stat"><div class="stat-value">8</div><div class="stat-label">phases</div></div>
+    <div class="summary-stat"><div class="stat-value">9</div><div class="stat-label">notebooks</div></div>
+    <div class="summary-stat"><div class="stat-value">4</div><div class="stat-label">DLT pipelines</div></div>
+    <div class="summary-stat"><div class="stat-value">5</div><div class="stat-label">workflows</div></div>
+    <div class="summary-stat"><div class="stat-value">7</div><div class="stat-label">Delta tables</div></div>
+  </div>
+
+  <div class="phase-list">
+
+    <!-- Phase 1 -->
+    <div class="phase-card">
+      <div class="phase-number">1</div>
+      <div class="phase-content">
+        <div class="phase-head">
+          <h3>Workspace Prerequisites</h3>
+          <span class="phase-time">~15 min</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-activities">
+            <h5>Activities</h5>
+            <ul>
+              <li>Verify Unity Catalog is enabled in your workspace</li>
+              <li>Enable Foundation Model APIs: <code>databricks-gpt-5-5-pro</code> + <code>databricks-gte-large-en</code></li>
+              <li>Verify Vector Search service is enabled (Compute → Vector Search)</li>
+              <li>Create a Single-Node cluster on <code>DBR 14.3 LTS ML</code></li>
+              <li>Install libraries: <code>langchain-databricks</code>, <code>databricks-vectorsearch</code></li>
+            </ul>
+          </div>
+          <div class="phase-verification">
+            <h5>Verify</h5>
+            <ul>
+              <li>Cluster shows <code>Running</code></li>
+              <li>Both libraries show <code>Installed</code></li>
+              <li>Both Foundation Model endpoints visible under Serving</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-files">
+          <span class="label">Files:</span>
+          <span class="file-chip ui">UI: Compute</span>
+          <span class="file-chip ui">UI: Serving</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase-card">
+      <div class="phase-number">2</div>
+      <div class="phase-content">
+        <div class="phase-head">
+          <h3>Foundational State</h3>
+          <span class="phase-time">~20 min</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-activities">
+            <h5>Activities</h5>
+            <ul>
+              <li>Run <code>00_setup</code> — creates catalog, schemas, volume</li>
+              <li>Create Vector Search endpoint named <code>fda-vs-endpoint</code> via UI (wait ~5 min for "Online")</li>
+              <li>(Optional) Configure UC account groups for tenants: <code>admins</code>, <code>clinical_full_access</code>, <code>tenant_cardio</code>, <code>tenant_metabolic</code>, <code>tenant_psych</code>, <code>tenant_otc</code></li>
+            </ul>
+          </div>
+          <div class="phase-verification">
+            <h5>Verify</h5>
+            <ul>
+              <li>Catalog Explorer shows <code>fda_rag</code> with bronze/silver/gold schemas</li>
+              <li>VS endpoint status: <code>Online</code></li>
+              <li>00_setup prints "available" for both endpoints</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-files">
+          <span class="label">Files:</span>
+          <span class="file-chip">notebooks/00_setup</span>
+          <span class="file-chip ui">UI: Compute → Vector Search</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase-card">
+      <div class="phase-number">3</div>
+      <div class="phase-content">
+        <div class="phase-head">
+          <h3>Choose &amp; Deploy ETL Path</h3>
+          <span class="phase-time">~10 min</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-activities">
+            <h5>Activities</h5>
+            <ul>
+              <li><strong>Option A — Imperative:</strong> Import notebooks 01–02c, attach to cluster</li>
+              <li><strong>Option B — Declarative (recommended for prod):</strong>
+                <code>databricks bundle validate -t dev</code>, then
+                <code>databricks bundle deploy -t dev</code></li>
+              <li>Choose option A for prototyping, B for production</li>
+            </ul>
+          </div>
+          <div class="phase-verification">
+            <h5>Verify</h5>
+            <ul>
+              <li>Notebooks visible in Workspace (A), OR</li>
+              <li>4 DLT pipelines visible under Workflows → Delta Live Tables (B)</li>
+              <li>5 workflows visible under Workflows → Jobs (B)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-files">
+          <span class="label">Files:</span>
+          <span class="file-chip">notebooks/01–02c</span>
+          <span class="file-chip">databricks.yml</span>
+          <span class="file-chip cli">CLI: databricks bundle</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase-card">
+      <div class="phase-number">4</div>
+      <div class="phase-content">
+        <div class="phase-head">
+          <h3>First End-to-End Data Run</h3>
+          <span class="phase-time">~30 min</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-activities">
+            <h5>Activities</h5>
+            <ul>
+              <li>Trigger the Bronze workflow manually (polling reports first-run change)</li>
+              <li>Bronze runs, commits to <code>fda_rag.bronze.openfda_raw</code></li>
+              <li>Silver workflow fires automatically on <code>table_update</code> event</li>
+              <li>Both Gold workflows fire in parallel after Silver commits</li>
+            </ul>
+          </div>
+          <div class="phase-verification">
+            <h5>Verify row counts</h5>
+            <ul>
+              <li>bronze.openfda_raw: ~1,600</li>
+              <li>silver.drug_labels: ~40–80</li>
+              <li>silver.adverse_events: ~700+</li>
+              <li>gold.fda_chunks: ~400–600</li>
+              <li>gold.fact_adverse_event: ~3,000+</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-files">
+          <span class="label">Files:</span>
+          <span class="file-chip">workflows/dlt_bronze_workflow.json</span>
+          <span class="file-chip">notebooks/00b_polling_check</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 5 -->
+    <div class="phase-card">
+      <div class="phase-number">5</div>
+      <div class="phase-content">
+        <div class="phase-head">
+          <h3>Vector Index Build &amp; Sync</h3>
+          <span class="phase-time">~10 min</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-activities">
+            <h5>Activities</h5>
+            <ul>
+              <li>Run <code>03_vector_index</code> cell 1 — submits index creation</li>
+              <li>Wait 5–10 min — watch VS endpoint UI for "Online"</li>
+              <li>Run cell 2 — sanity-check similarity search</li>
+            </ul>
+          </div>
+          <div class="phase-verification">
+            <h5>Verify</h5>
+            <ul>
+              <li>Index <code>fda_chunks_index</code> status: <code>Online</code></li>
+              <li>Sanity search returns 3 grounded results with drug + section</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-files">
+          <span class="label">Files:</span>
+          <span class="file-chip">notebooks/03_vector_index</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 6 -->
+    <div class="phase-card">
+      <div class="phase-number">6</div>
+      <div class="phase-content">
+        <div class="phase-head">
+          <h3>RAG Chain · Register · Eval · Serve</h3>
+          <span class="phase-time">~25 min</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-activities">
+            <h5>Activities</h5>
+            <ul>
+              <li>Run <code>04_rag_chain</code> — builds chain, logs to MLflow, registers in UC</li>
+              <li>Run <code>06_deploy_serving</code> — creates endpoint (wait ~10 min for Ready)</li>
+              <li>Run <code>05_evaluate</code> — runs eval set against live endpoint</li>
+            </ul>
+          </div>
+          <div class="phase-verification">
+            <h5>Verify</h5>
+            <ul>
+              <li><code>fda_rag.gold.fda_assistant</code> v1 in UC registry</li>
+              <li>Endpoint <code>fda-rag-endpoint</code> status: <code>Ready</code></li>
+              <li>Faithfulness &gt; 0.85, refusal rate &gt; 90% on out-of-corpus</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-files">
+          <span class="label">Files:</span>
+          <span class="file-chip">notebooks/04_rag_chain</span>
+          <span class="file-chip">notebooks/05_evaluate</span>
+          <span class="file-chip">notebooks/06_deploy_serving</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 7 -->
+    <div class="phase-card">
+      <div class="phase-number">7</div>
+      <div class="phase-content">
+        <div class="phase-head">
+          <h3>Governance — RLS &amp; PII Mask</h3>
+          <span class="phase-time">~10 min</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-activities">
+            <h5>Activities</h5>
+            <ul>
+              <li>Run <code>08_setup_rls</code> as a workspace admin</li>
+              <li>Add a test user to a <code>tenant_*</code> group via account console</li>
+              <li>Run cross-tenant verification queries from a tenant user account</li>
+              <li>Update RAG chain to apply VS metadata filter at query time</li>
+            </ul>
+          </div>
+          <div class="phase-verification">
+            <h5>Verify</h5>
+            <ul>
+              <li>Test user sees only their tenant's drugs in <code>silver.drug_labels</code></li>
+              <li><code>patient_age</code> shows decade buckets to non-clinical users</li>
+              <li>Admin still sees all data + raw age</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-files">
+          <span class="label">Files:</span>
+          <span class="file-chip">notebooks/08_setup_rls</span>
+          <span class="file-chip ui">UI: Account console (groups)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 8 -->
+    <div class="phase-card">
+      <div class="phase-number">8</div>
+      <div class="phase-content">
+        <div class="phase-head">
+          <h3>API Gateway &amp; Promote to Prod</h3>
+          <span class="phase-time">~10 min</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-activities">
+            <h5>Activities</h5>
+            <ul>
+              <li>Local: <code>pip install -r api/requirements.txt</code> → <code>uvicorn app:app --reload</code></li>
+              <li>Or Docker: <code>docker build -t fda-rag-api .</code> → <code>docker run ...</code></li>
+              <li>Test: <code>curl POST /v1/ask</code> with API key</li>
+              <li>Promote: <code>databricks bundle deploy -t staging</code> → <code>-t prod</code></li>
+            </ul>
+          </div>
+          <div class="phase-verification">
+            <h5>Verify</h5>
+            <ul>
+              <li>API returns grounded answer with [drug — section] citation</li>
+              <li>API includes disclaimer + 200 response</li>
+              <li>Prod workflow schedule: <code>UNPAUSED</code></li>
+              <li>Prod runs as service principal (auditable)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-files">
+          <span class="label">Files:</span>
+          <span class="file-chip">api/app.py</span>
+          <span class="file-chip">api/Dockerfile</span>
+          <span class="file-chip">databricks.yml</span>
+          <span class="file-chip cli">CLI: databricks bundle deploy</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="playbook-finale">
+    <strong>✓ Day-2 operations once deployed:</strong>
+    Bronze polling task runs daily at 06:00 UTC and gates downstream cascade. The full chain
+    typically completes in ~3–5 minutes after Bronze commits. Monitor via the inference table view
+    (<code>07_monitoring</code>) for refusal rate, latency, and error rate. Re-run
+    <code>04 → 05 → promote alias</code> whenever you ship a new prompt or change retrieval parameters.
   </div>
 
 </div>

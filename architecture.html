@@ -593,6 +593,15 @@
         <ul><li>Inference table view: latency, errors, refusal rate</li></ul>
         <div class="impl-tags"><span class="nb-chip">07_monitoring</span></div>
       </div>
+      <div class="box">
+        <div class="title">Tenant RLS &amp; PII Mask</div>
+        <ul><li>Row filter + column mask on Silver / Gold</li></ul>
+        <div class="impl-tags"><span class="nb-chip">08_setup_rls</span></div>
+      </div>
+      <div class="box">
+        <div class="title">Asset Bundle Deployment</div>
+        <ul><li>databricks.yml + resources/ for dev → prod</li></ul>
+      </div>
     </div>
   </div>
 
@@ -1150,6 +1159,383 @@
       <li>Full audit chain: state table + run history</li>
     </ul>
   </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- GOVERNANCE — MULTI-TENANT RLS                                              -->
+<!-- ========================================================================= -->
+
+<style>
+  .governance {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    padding: 28px;
+  }
+  .rls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 18px;
+    margin: 16px 0;
+  }
+  .rls-stage {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 14px 16px;
+    border: 1.5px solid #cbd5e1;
+  }
+  .rls-stage h4 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    text-transform: uppercase;
+    color: #1f2937;
+    letter-spacing: 0.05em;
+  }
+  .rls-stage code {
+    background: #f3f4f6;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+  .rls-stage ul {
+    margin: 6px 0 0;
+    padding-left: 16px;
+    font-size: 12px;
+    color: #374151;
+  }
+  .rls-flow-arrow {
+    text-align: center;
+    color: #64748b;
+    font-size: 18px;
+    margin: 4px 0;
+  }
+  .rls-targets {
+    margin-top: 16px;
+    background: #fff7ed;
+    border: 1.5px solid #fb923c;
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 12px;
+    color: #7c2d12;
+  }
+  .rls-targets strong { color: #7c2d12; }
+  .rls-targets code {
+    background: #fffbeb;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #92400e;
+  }
+  .rag-gotcha {
+    background: #fef2f2;
+    border-left: 4px solid #dc2626;
+    padding: 12px 16px;
+    margin-top: 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #7f1d1d;
+  }
+  .rag-gotcha .gotcha-title {
+    font-weight: 700;
+    color: #991b1b;
+    margin-bottom: 4px;
+  }
+</style>
+
+<h2>Governance — Multi-Tenant Row-Level Security &amp; PII Masking</h2>
+
+<div class="governance">
+
+  <p style="margin:0 0 16px; font-size:13px; color:#4b5563;">
+    Tenant axis: <strong>drug therapy area</strong>. The cardio team sees cardio drugs;
+    the metabolic team sees metabolic drugs; admins see everything. Implemented with two
+    Unity Catalog primitives: <code style="background:#f3f4f6;padding:2px 5px;border-radius:3px;">ROW FILTER</code>
+    and <code style="background:#f3f4f6;padding:2px 5px;border-radius:3px;">COLUMN MASK</code>.
+  </p>
+
+  <div class="rls-grid">
+
+    <div class="rls-stage">
+      <h4>1 · Account Groups (UC)</h4>
+      <ul>
+        <li><code>admins</code> — sees all data</li>
+        <li><code>clinical_full_access</code> — full PII access</li>
+        <li><code>tenant_cardio</code></li>
+        <li><code>tenant_metabolic</code></li>
+        <li><code>tenant_psych</code></li>
+        <li><code>tenant_otc</code></li>
+      </ul>
+    </div>
+
+    <div class="rls-stage">
+      <h4>2 · Mapping Table</h4>
+      <div style="font-family:ui-monospace,monospace; font-size:11px; color:#1f2937; background:#fff; border:1px solid #e5e7eb; padding:8px; border-radius:4px;">
+        gold._tenant_drug_map<br>
+        ───────────────────<br>
+        tenant_group · drug_generic<br>
+        ───────────────────<br>
+        cardio · warfarin<br>
+        cardio · atorvastatin<br>
+        metab · metformin<br>
+        psych · sertraline<br>
+        otc · ibuprofen<br>
+        …
+      </div>
+      <ul style="margin-top:8px;">
+        <li>SELECT restricted to <code>admins</code></li>
+      </ul>
+    </div>
+
+    <div class="rls-stage">
+      <h4>3 · UC Functions</h4>
+      <p style="margin:0; font-size:12px; color:#374151;"><strong>Row filter</strong> <code>tenant_drug_filter(drug_generic)</code>:</p>
+      <ul style="margin-top:4px;">
+        <li>Returns true if user ∈ <code>admins</code></li>
+        <li>OR user ∈ group that has this drug mapped</li>
+      </ul>
+      <p style="margin:10px 0 0; font-size:12px; color:#374151;"><strong>Column mask</strong> <code>age_pii_mask(age)</code>:</p>
+      <ul style="margin-top:4px;">
+        <li>Raw age for <code>admins</code> / <code>clinical_full_access</code></li>
+        <li>Decade bucket otherwise (60-70 → 60)</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="rls-flow-arrow">↓ applied via ALTER TABLE …</div>
+
+  <div class="rls-targets">
+    <strong>Tables protected:</strong><br>
+    <code>silver.drug_labels</code> · <code>silver.adverse_events</code> · <code>gold.fda_chunks</code> · <code>gold.dim_drug</code>
+    <br><br>
+    <code>ALTER TABLE silver.drug_labels SET ROW FILTER fda_rag.gold.tenant_drug_filter ON (drug_generic);</code><br>
+    <code>ALTER TABLE silver.adverse_events ALTER COLUMN patient_age SET MASK fda_rag.gold.age_pii_mask;</code>
+  </div>
+
+  <div class="rag-gotcha">
+    <div class="gotcha-title">⚠ RAG gotcha: vector indexes don't inherit row filters</div>
+    The VS index is computed from a snapshot of <code>gold.fda_chunks</code>. UC row filters are evaluated at <em>query</em>
+    time on the source table — not on the index. The RAG chain must apply tenant filtering at retrieval time as a VS
+    metadata filter: <code style="background:#fff1f2;padding:1px 5px;border-radius:3px;">retriever_kwargs={"filter": "drug_generic IN (…)"}</code>.
+    For regulated isolation (e.g., separate sponsor data), use per-tenant indexes instead.
+  </div>
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- DEPLOYMENT LIFECYCLE — ASSET BUNDLES                                       -->
+<!-- ========================================================================= -->
+
+<style>
+  .deployment {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    padding: 28px;
+  }
+  .bundle-flow {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 24px;
+    align-items: start;
+    margin-top: 16px;
+  }
+  .bundle-source {
+    background: #f0f9ff;
+    border: 1.5px solid #0369a1;
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .bundle-source h4 {
+    margin: 0 0 6px;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #075985;
+    letter-spacing: 0.05em;
+  }
+  .bundle-source ul, .bundle-source code {
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    color: #1e3a8a;
+  }
+  .bundle-source ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+  }
+  .bundle-source li { margin: 3px 0; }
+
+  .bundle-cli {
+    background: #1f2937;
+    color: #fbbf24;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .bundle-cli .cmd { color: #fbbf24; }
+  .bundle-cli .opt { color: #60a5fa; }
+  .bundle-cli .cmt { color: #6b7280; }
+
+  .target-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .target-card {
+    border-radius: 8px;
+    padding: 12px 14px;
+    border: 1.5px solid;
+  }
+  .target-card.dev    { background: #f0fdf4; border-color: #16a34a; }
+  .target-card.stg    { background: #fef9c3; border-color: #ca8a04; }
+  .target-card.prod   { background: #fef2f2; border-color: #dc2626; }
+  .target-card h4 {
+    margin: 0 0 6px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .target-card.dev h4  { color: #14532d; }
+  .target-card.stg h4  { color: #713f12; }
+  .target-card.prod h4 { color: #7f1d1d; }
+  .target-card ul {
+    margin: 6px 0 0;
+    padding-left: 16px;
+    font-size: 11px;
+    color: #374151;
+  }
+  .target-card code {
+    background: rgba(255,255,255,0.6);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+  }
+
+  .bundle-arrow {
+    font-size: 22px;
+    color: #64748b;
+    text-align: center;
+    align-self: center;
+  }
+
+  .bundle-excluded {
+    margin-top: 18px;
+    background: #fafaf9;
+    border-left: 4px solid #6b7280;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #4b5563;
+  }
+  .bundle-excluded strong { color: #1f2937; }
+</style>
+
+<h2>Deployment Lifecycle — Asset Bundles (dev → staging → prod)</h2>
+
+<div class="deployment">
+
+  <p style="margin:0 0 16px; font-size:13px; color:#4b5563;">
+    One YAML manifest declares <strong>every</strong> Databricks resource — pipelines,
+    workflows, registered models, serving endpoints. Same manifest deploys to three
+    environments via target-level variable overrides.
+  </p>
+
+  <div class="bundle-flow">
+
+    <!-- LEFT: Repo / source -->
+    <div class="bundle-source">
+      <h4>Source (the repo)</h4>
+      <ul>
+        <li>📄 databricks.yml</li>
+        <li>📁 resources/</li>
+        <li>&nbsp;&nbsp;├ pipelines.yml</li>
+        <li>&nbsp;&nbsp;├ workflows.yml</li>
+        <li>&nbsp;&nbsp;└ serving.yml</li>
+        <li>📁 notebooks/</li>
+        <li>📁 pipelines/</li>
+        <li>📁 workflows/</li>
+      </ul>
+      <p style="margin:10px 0 0; font-size:11px; color:#475569;">
+        Variable substitution:<br>
+        <code style="background:#fff; padding:1px 4px; border-radius:3px;">${var.catalog}</code> · <code style="background:#fff; padding:1px 4px; border-radius:3px;">${var.workload_size}</code>
+      </p>
+    </div>
+
+    <!-- MIDDLE: CLI commands -->
+    <div class="bundle-cli">
+      <div><span class="cmt"># Validate YAML — no API calls</span></div>
+      <div><span class="cmd">databricks bundle validate</span> <span class="opt">-t dev</span></div>
+      <div style="height:8px;"></div>
+      <div><span class="cmt"># Deploy resources to target</span></div>
+      <div><span class="cmd">databricks bundle deploy</span> <span class="opt">-t dev</span></div>
+      <div style="height:8px;"></div>
+      <div><span class="cmt"># Run a specific workflow</span></div>
+      <div><span class="cmd">databricks bundle run</span> \</div>
+      <div style="padding-left:24px;">fda_workflow_event_driven <span class="opt">-t dev</span></div>
+      <div style="height:8px;"></div>
+      <div><span class="cmt"># Promote</span></div>
+      <div><span class="cmd">databricks bundle deploy</span> <span class="opt">-t staging</span></div>
+      <div><span class="cmd">databricks bundle deploy</span> <span class="opt">-t prod</span></div>
+      <div style="height:8px;"></div>
+      <div><span class="cmt"># Tear down dev when done</span></div>
+      <div><span class="cmd">databricks bundle destroy</span> <span class="opt">-t dev</span></div>
+    </div>
+
+    <!-- RIGHT: Targets -->
+    <div class="target-cards">
+
+      <div class="target-card dev">
+        <h4>dev (default)</h4>
+        <ul>
+          <li>Mode: <code>development</code></li>
+          <li>Catalog: <code>fda_rag_dev</code></li>
+          <li>Schedules: <code>PAUSED</code></li>
+          <li>Prefix: <code>[user@email]</code></li>
+          <li>Run-as: caller</li>
+        </ul>
+      </div>
+
+      <div class="target-card stg">
+        <h4>staging</h4>
+        <ul>
+          <li>Mode: <code>production</code></li>
+          <li>Catalog: <code>fda_rag_staging</code></li>
+          <li>Run-as: service principal</li>
+          <li>Workload: <code>Small</code></li>
+        </ul>
+      </div>
+
+      <div class="target-card prod">
+        <h4>prod</h4>
+        <ul>
+          <li>Mode: <code>production</code></li>
+          <li>Catalog: <code>fda_rag</code></li>
+          <li>Schedules: <code>UNPAUSED</code></li>
+          <li>Workload: <code>Medium</code></li>
+          <li>Run-as: <code>fda-pharma-prod-sp</code></li>
+        </ul>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="bundle-excluded">
+    <strong>What's NOT in the bundle (and why):</strong>
+    Vector Search endpoint &amp; index, Unity Catalog catalogs/schemas, and RLS DDL.
+    Asset Bundles don't natively support these resource types yet — they're foundational state
+    managed by one-time setup notebooks (<code style="background:#fff; padding:1px 5px; border-radius:3px;">00_setup</code>,
+    <code style="background:#fff; padding:1px 5px; border-radius:3px;">03_vector_index</code>,
+    <code style="background:#fff; padding:1px 5px; border-radius:3px;">08_setup_rls</code>).
+    The pattern: <em>bundles for repeatable resources, setup notebooks for foundational state.</em>
+  </div>
+
 </div>
 
 </body>

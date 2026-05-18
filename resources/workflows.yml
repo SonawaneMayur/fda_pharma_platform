@@ -1,0 +1,131 @@
+# Workflows — event-driven orchestration across the medallion.
+# Bronze: scheduled with smart polling gate.
+# Silver / Gold: table_update triggers cascade automatically from upstream commits.
+
+resources:
+  jobs:
+
+    # =================== MAIN BRONZE WORKFLOW (scheduled + gated) ===================
+    fda_workflow_event_driven:
+      name: "[${bundle.target}] fda_workflow_event_driven"
+      description: "Daily polling gate → Bronze pipeline. Silver/Gold cascade via table triggers."
+      max_concurrent_runs: 1
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: UTC
+        pause_status: UNPAUSED
+      email_notifications:
+        on_failure:
+          - ${var.notifications_email}
+      tasks:
+        - task_key: poll_openfda
+          spark_python_task:
+            python_file: ../pipelines/bronze/_polling_check.py
+          job_cluster_key: small_cluster
+
+        - task_key: gate_on_change
+          depends_on:
+            - task_key: poll_openfda
+          condition_task:
+            op: EQUAL_TO
+            left: "{{tasks.poll_openfda.values.data_changed}}"
+            right: "true"
+
+        - task_key: run_bronze_pipeline
+          depends_on:
+            - task_key: gate_on_change
+              outcome: "true"
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.fda_bronze_ingest.id}
+            full_refresh: false
+
+      job_clusters:
+        - job_cluster_key: small_cluster
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
+            data_security_mode: SINGLE_USER
+
+    # =================== TABLE-UPDATE TRIGGERED WORKFLOWS ===================
+    fda_silver_triggered:
+      name: "[${bundle.target}] fda_silver_triggered"
+      description: "Fires on bronze.openfda_raw update."
+      max_concurrent_runs: 1
+      trigger:
+        table_update:
+          table_names:
+            - ${var.catalog}.bronze.openfda_raw
+          condition: ANY_UPDATED
+          min_time_between_triggers_seconds: 600
+          wait_after_last_change_seconds: 60
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: run_silver_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.fda_silver_conform.id}
+            full_refresh: false
+
+    fda_gold_rag_triggered:
+      name: "[${bundle.target}] fda_gold_rag_triggered"
+      description: "Fires on silver.* update. Rebuilds RAG chunks."
+      max_concurrent_runs: 1
+      trigger:
+        table_update:
+          table_names:
+            - ${var.catalog}.silver.drug_labels
+            - ${var.catalog}.silver.adverse_events
+          condition: ANY_UPDATED
+          min_time_between_triggers_seconds: 600
+          wait_after_last_change_seconds: 60
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: run_gold_rag_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.fda_gold_rag_chunks.id}
+            full_refresh: false
+
+    fda_gold_analytics_triggered:
+      name: "[${bundle.target}] fda_gold_analytics_triggered"
+      description: "Fires on silver.* update. Rebuilds star schema."
+      max_concurrent_runs: 1
+      trigger:
+        table_update:
+          table_names:
+            - ${var.catalog}.silver.drug_labels
+            - ${var.catalog}.silver.adverse_events
+          condition: ANY_UPDATED
+          min_time_between_triggers_seconds: 600
+          wait_after_last_change_seconds: 60
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: run_gold_analytics_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.fda_gold_analytics_star.id}
+            full_refresh: false
+
+    # =================== ML LIFECYCLE WORKFLOW (manual / on-demand) ===================
+    fda_ml_lifecycle:
+      name: "[${bundle.target}] fda_ml_lifecycle"
+      description: "Register RAG chain, evaluate, conditionally promote prod alias."
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: register_rag_chain
+          notebook_task:
+            notebook_path: ../notebooks/04_rag_chain.py
+          job_cluster_key: ml_cluster
+
+        - task_key: evaluate
+          depends_on:
+            - task_key: register_rag_chain
+          notebook_task:
+            notebook_path: ../notebooks/05_evaluate.py
+          job_cluster_key: ml_cluster
+
+      job_clusters:
+        - job_cluster_key: ml_cluster
+          new_cluster:
+            spark_version: 14.3.x-cpu-ml-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
+            data_security_mode: SINGLE_USER

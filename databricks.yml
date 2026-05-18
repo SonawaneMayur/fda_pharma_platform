@@ -1,0 +1,99 @@
+# Databricks Asset Bundle — FDA Pharmacovigilance Platform
+#
+# Deploy with:
+#   databricks bundle validate -t dev
+#   databricks bundle deploy -t dev
+#   databricks bundle run fda_workflow_event_driven -t dev
+#   databricks bundle deploy -t prod
+
+bundle:
+  name: fda_pharma_platform
+  git:
+    branch: main
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: "Unity Catalog name (overridden per target)"
+    default: fda_rag
+
+  vector_search_endpoint:
+    description: "Pre-created Vector Search endpoint name"
+    default: fda-vs-endpoint
+
+  llm_endpoint:
+    description: "Foundation Model API endpoint for the RAG LLM"
+    default: databricks-gpt-5-5-pro
+
+  embedding_endpoint:
+    description: "Foundation Model API endpoint for embeddings"
+    default: databricks-gte-large-en
+
+  workload_size:
+    description: "Model Serving workload size"
+    default: Small
+
+  notifications_email:
+    description: "Email for workflow failure alerts"
+    default: ""
+
+# ---------------------------------------------------------------------------
+# Targets — environments
+# ---------------------------------------------------------------------------
+targets:
+
+  # ------------------------------- DEV -------------------------------
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://<your-dev-workspace>.cloud.databricks.com
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: fda_rag_dev
+      workload_size: Small
+    resources:
+      pipelines:
+        fda_bronze_ingest:
+          development: true
+        fda_silver_conform:
+          development: true
+        fda_gold_rag_chunks:
+          development: true
+        fda_gold_analytics_star:
+          development: true
+      jobs:
+        fda_workflow_event_driven:
+          schedule:
+            pause_status: PAUSED  # don't auto-run in dev
+
+  # ----------------------------- STAGING -----------------------------
+  staging:
+    mode: production
+    workspace:
+      host: https://<your-staging-workspace>.cloud.databricks.com
+      root_path: /Workspace/Shared/${bundle.name}/${bundle.target}
+    variables:
+      catalog: fda_rag_staging
+      workload_size: Small
+    run_as:
+      service_principal_name: fda-pharma-staging-sp
+
+  # ------------------------------- PROD ------------------------------
+  prod:
+    mode: production
+    workspace:
+      host: https://<your-prod-workspace>.cloud.databricks.com
+      root_path: /Workspace/Shared/${bundle.name}/${bundle.target}
+    variables:
+      catalog: fda_rag
+      workload_size: Medium
+    run_as:
+      service_principal_name: fda-pharma-prod-sp
+    resources:
+      jobs:
+        fda_workflow_event_driven:
+          schedule:
+            pause_status: UNPAUSED

@@ -1,0 +1,30 @@
+# Model Serving endpoint for the RAG chain.
+# Auto-capture writes every inference request/response to a UC table.
+
+resources:
+  registered_models:
+    fda_assistant:
+      catalog_name: ${var.catalog}
+      schema_name: gold
+      name: fda_assistant
+      comment: "RAG chain over FDA labels + adverse events. Logged via mlflow.langchain.log_model."
+
+  model_serving_endpoints:
+    fda_rag_endpoint:
+      name: "fda-rag-endpoint-${bundle.target}"
+      config:
+        served_entities:
+          - name: fda-assistant-v1
+            entity_name: ${var.catalog}.gold.fda_assistant
+            entity_version: "1"
+            workload_size: ${var.workload_size}
+            scale_to_zero_enabled: true
+        auto_capture_config:
+          catalog_name: ${var.catalog}
+          schema_name: gold
+          table_name_prefix: fda_rag_inference
+          enabled: true
+        traffic_config:
+          routes:
+            - served_model_name: fda-assistant-v1
+              traffic_percentage: 100

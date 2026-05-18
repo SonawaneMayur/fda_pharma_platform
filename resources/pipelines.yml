@@ -1,0 +1,84 @@
+# 4 DLT pipelines, one per medallion layer.
+
+resources:
+  pipelines:
+
+    fda_bronze_ingest:
+      name: "[${bundle.target}] fda_bronze_ingest"
+      catalog: ${var.catalog}
+      target: bronze
+      edition: ADVANCED
+      channel: CURRENT
+      photon: true
+      continuous: false
+      development: false
+      libraries:
+        - file:
+            path: ../pipelines/bronze/ingest_openfda.py
+      clusters:
+        - label: default
+          num_workers: 1
+          autoscale:
+            min_workers: 1
+            max_workers: 2
+            mode: ENHANCED
+
+    fda_silver_conform:
+      name: "[${bundle.target}] fda_silver_conform"
+      catalog: ${var.catalog}
+      target: silver
+      edition: ADVANCED
+      channel: CURRENT
+      photon: true
+      continuous: false
+      development: false
+      libraries:
+        - file:
+            path: ../pipelines/silver/conform_entities.py
+      clusters:
+        - label: default
+          num_workers: 1
+          autoscale:
+            min_workers: 1
+            max_workers: 4
+            mode: ENHANCED
+
+    fda_gold_rag_chunks:
+      name: "[${bundle.target}] fda_gold_rag_chunks"
+      catalog: ${var.catalog}
+      target: gold
+      edition: ADVANCED
+      channel: CURRENT
+      photon: true
+      continuous: false
+      development: false
+      libraries:
+        - file:
+            path: ../pipelines/gold_rag/build_chunks.py
+      clusters:
+        - label: default
+          num_workers: 1
+          autoscale:
+            min_workers: 1
+            max_workers: 2
+            mode: ENHANCED
+
+    fda_gold_analytics_star:
+      name: "[${bundle.target}] fda_gold_analytics_star"
+      catalog: ${var.catalog}
+      target: gold
+      edition: ADVANCED
+      channel: CURRENT
+      photon: true
+      continuous: false
+      development: false
+      libraries:
+        - file:
+            path: ../pipelines/gold_analytics/build_star_schema.py
+      clusters:
+        - label: default
+          num_workers: 1
+          autoscale:
+            min_workers: 1
+            max_workers: 4
+            mode: ENHANCED
